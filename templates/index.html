@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>AI Claims System</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+
+<body style="background:#111827; color:white; font-family:Arial; margin:0;">
+
+    <div style="background:#0f172a; padding:20px;">
+
+        <h1 style="text-align:center; color:#38bdf8;">
+            AI Claims & Occupational Risk Analyzer
+        </h1>
+
+    </div>
+
+    <div style="padding:20px;">
+
+        <!-- KPIs -->
+
+        <div style="
+            display:flex;
+            gap:20px;
+            margin-bottom:30px;
+            flex-wrap:wrap;
+        ">
+
+            <div style="
+                background:#1e293b;
+                padding:20px;
+                border-radius:10px;
+                width:200px;
+            ">
+
+                <h3>Total Sinistros</h3>
+
+                <h1>{{ total_sinistros }}</h1>
+
+            </div>
+
+            <div style="
+                background:#1e293b;
+                padding:20px;
+                border-radius:10px;
+                width:200px;
+            ">
+
+                <h3>Alto Risco</h3>
+
+                <h1 style="color:red;">
+                    {{ alto_risco }}
+                </h1>
+
+            </div>
+
+            <div style="
+                background:#1e293b;
+                padding:20px;
+                border-radius:10px;
+                width:200px;
+            ">
+
+                <h3>Média Score IA</h3>
+
+                <h1 style="color:#22c55e;">
+                    {{ media_score }}
+                </h1>
+
+            </div>
+
+        </div>
+
+        <!-- GRÁFICO -->
+
+        <div style="
+            background:#1e293b;
+            padding:20px;
+            border-radius:10px;
+            margin-bottom:30px;
+            width:100%;
+            max-width:700px;
+        ">
+
+            <h2>📈 Distribuição de Riscos</h2>
+
+            <canvas id="graficoRisco" height="120"></canvas>
+
+        </div>
+
+        <!-- FILTROS -->
+
+        <h2 style="color:#38bdf8;">
+            🔍 Buscar e Filtrar
+        </h2>
+
+        <form method="GET">
+
+            <input
+                type="text"
+                name="busca"
+                placeholder="Buscar descrição..."
+                style="
+                    padding:10px;
+                    border-radius:5px;
+                    width:250px;
+                "
+            >
+
+            <select
+                name="risco"
+                style="
+                    padding:10px;
+                    border-radius:5px;
+                "
+            >
+
+                <option value="TODOS">
+                    Todos
+                </option>
+
+                <option value="ALTO">
+                    ALTO
+                </option>
+
+                <option value="MÉDIO">
+                    MÉDIO
+                </option>
+
+                <option value="BAIXO">
+                    BAIXO
+                </option>
+
+            </select>
+
+            <button
+                type="submit"
+                style="
+                    padding:10px;
+                    background:#38bdf8;
+                    border:none;
+                    border-radius:5px;
+                    color:white;
+                "
+            >
+                Filtrar
+            </button>
+
+        </form>
+
+        <hr style="margin-top:30px;">
+
+        <!-- PDF -->
+
+        <a href="/pdf">
+
+            <button
+                style="
+                    padding:12px;
+                    background:#ef4444;
+                    color:white;
+                    border:none;
+                    border-radius:5px;
+                    margin-bottom:20px;
+                "
+            >
+                📄 Exportar Relatório PDF
+            </button>
+
+        </a>
+
+        <!-- FORMULÁRIO -->
+
+        <h2 style="color:#22c55e;">
+            ➕ Novo Sinistro
+        </h2>
+
+        <form action="/adicionar" method="POST">
+
+            <input
+                type="text"
+                name="descricao"
+                placeholder="Digite o sinistro..."
+                style="
+                    width:60%;
+                    padding:10px;
+                    border-radius:5px;
+                "
+            >
+
+            <button
+                type="submit"
+                style="
+                    padding:10px;
+                    background:#22c55e;
+                    border:none;
+                    border-radius:5px;
+                    color:white;
+                "
+            >
+                Analisar e Salvar
+            </button>
+
+        </form>
+
+        <hr style="margin-top:30px;">
+
+        <!-- DASHBOARD -->
+
+        <h2 style="color:#22c55e;">
+            📊 Painel Inteligente de Sinistros
+        </h2>
+
+        {% for sinistro in sinistros %}
+
+        <div style="
+            background:#1e293b;
+            border-left:8px solid
+            {% if sinistro[3] == 'ALTO' %}
+                red
+            {% elif sinistro[3] == 'MÉDIO' %}
+                orange
+            {% else %}
+                lime
+            {% endif %};
+            padding:20px;
+            margin-top:20px;
+            border-radius:10px;
+        ">
+
+            <h2>
+                Sinistro #{{ sinistro[0] }}
+            </h2>
+
+            <p>
+                <strong>Descrição:</strong>
+                {{ sinistro[1] }}
+            </p>
+
+            <p>
+                <strong>Status:</strong>
+                {{ sinistro[2] }}
+            </p>
+
+            <p>
+                <strong>Risco:</strong>
+                {{ sinistro[3] }}
+            </p>
+
+            <p>
+                <strong>Score IA:</strong>
+                {{ sinistro[4] }}/100
+            </p>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    <!-- SCRIPT GRÁFICO -->
+
+    <script>
+
+        const ctx = document.getElementById('graficoRisco');
+
+        new Chart(ctx, {
+
+            type: 'bar',
+
+            data: {
+
+                labels: ['ALTO', 'MÉDIO', 'BAIXO'],
+
+                datasets: [{
+
+                    label: 'Quantidade',
+
+                    data: [
+                        {{ alto_risco }},
+                        {{ medio_risco }},
+                        {{ baixo_risco }}
+                    ],
+
+                    backgroundColor: [
+                        'red',
+                        'orange',
+                        'lime'
+                    ]
+
+                }]
+
+            }
+
+        });
+
+    </script>
+
+</body>
+
+</html>
