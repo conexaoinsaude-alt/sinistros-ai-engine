@@ -15,9 +15,9 @@ app = Flask(__name__)
 
 app.secret_key = "supersecretkey"
 
-# =========================================
+# =========================
 # LOGIN MANAGER
-# =========================================
+# =========================
 
 login_manager = LoginManager()
 
@@ -25,9 +25,9 @@ login_manager.init_app(app)
 
 login_manager.login_view = "login"
 
-# =========================================
+# =========================
 # USUÁRIO
-# =========================================
+# =========================
 
 class User(UserMixin):
 
@@ -35,14 +35,22 @@ class User(UserMixin):
         self.id = id
 
 
+USUARIO = {
+
+    "conexaoinsaude@msn.com": {
+        "senha": "jppfr7901"
+    }
+
+}
+
 @login_manager.user_loader
 def load_user(user_id):
 
     return User(user_id)
 
-# =========================================
-# BANCO SQLITE
-# =========================================
+# =========================
+# SQLITE
+# =========================
 
 conn = sqlite3.connect(
     "sinistros.db",
@@ -67,9 +75,9 @@ CREATE TABLE IF NOT EXISTS sinistros (
 
 conn.commit()
 
-# =========================================
-# IA DE RISCO
-# =========================================
+# =========================
+# IA
+# =========================
 
 def analisar_risco(descricao):
 
@@ -78,7 +86,7 @@ def analisar_risco(descricao):
     if "queda" in descricao:
         return "MÉDIO", 65
 
-    elif "máquina" in descricao or "elétrica" in descricao:
+    elif "máquina" in descricao or "eletrica" in descricao:
         return "ALTO", 90
 
     elif "leve" in descricao:
@@ -87,9 +95,9 @@ def analisar_risco(descricao):
     else:
         return "MÉDIO", 50
 
-# =========================================
+# =========================
 # LOGIN
-# =========================================
+# =========================
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -99,35 +107,28 @@ def login():
     if request.method == "POST":
 
         username = request.form.get("username")
+        senha = request.form.get("senha")
 
-        password = request.form.get("senha")
+        if username in USUARIO:
 
-        # LOGIN PROFISSIONAL
+            if senha == USUARIO[username]["senha"]:
 
-        if (
-            username == "conexaoinsaude@msn.com"
-            and
-            password == "jppfr7901"
-        ):
+                user = User(username)
 
-            user = User(username)
+                login_user(user)
 
-            login_user(user)
+                return redirect(url_for("home"))
 
-            return redirect(url_for("home"))
-
-        else:
-
-            erro = "Usuário ou senha inválidos."
+        erro = "Usuário ou senha inválidos."
 
     return render_template(
         "login.html",
         erro=erro
     )
 
-# =========================================
+# =========================
 # LOGOUT
-# =========================================
+# =========================
 
 @app.route("/logout")
 @login_required
@@ -137,9 +138,9 @@ def logout():
 
     return redirect(url_for("login"))
 
-# =========================================
+# =========================
 # HOME
-# =========================================
+# =========================
 
 @app.route("/")
 @login_required
@@ -212,9 +213,9 @@ def home():
 
     )
 
-# =========================================
+# =========================
 # ADICIONAR
-# =========================================
+# =========================
 
 @app.route("/adicionar", methods=["POST"])
 @login_required
@@ -239,9 +240,9 @@ def adicionar():
 
     return redirect("/")
 
-# =========================================
-# GERAR PDF
-# =========================================
+# =========================
+# PDF
+# =========================
 
 @app.route("/pdf")
 @login_required
@@ -291,9 +292,9 @@ def gerar_pdf():
         as_attachment=True
     )
 
-# =========================================
-# EXECUÇÃO
-# =========================================
+# =========================
+# EXECUTAR
+# =========================
 
 if __name__ == "__main__":
 
