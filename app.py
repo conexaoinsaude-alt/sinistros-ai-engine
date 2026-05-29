@@ -1,295 +1,195 @@
-from flask import Flask, render_template, request, redirect, send_file, url_for
-import sqlite3
+<!DOCTYPE html>
+<html lang="pt-br">
 
-from reportlab.pdfgen import canvas
+<head>
 
-from flask_login import (
-    LoginManager,
-    UserMixin,
-    login_user,
-    login_required,
-    logout_user
-)
+    <meta charset="UTF-8">
 
-app = Flask(__name__)
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-app.secret_key = "supersecretkey"
+    <title>Login - SINISTROS AI ENGINE</title>
 
-# =========================================
-# LOGIN
-# =========================================
+    <style>
 
-login_manager = LoginManager()
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family:Arial, Helvetica, sans-serif;
+        }
 
-login_manager.init_app(app)
+        body{
+            background:linear-gradient(135deg,#07162d,#020b18);
+            height:100vh;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+        }
 
-login_manager.login_view = "login"
+        .login-box{
 
-# =========================================
-# USUÁRIO
-# =========================================
+            width:420px;
 
-class User(UserMixin):
+            background:#18263d;
 
-    def __init__(self, id):
-        self.id = id
+            padding:40px;
 
+            border-radius:18px;
 
-@login_manager.user_loader
-def load_user(user_id):
+            box-shadow:0 0 30px rgba(0,0,0,0.4);
 
-    return User(user_id)
+        }
 
-# =========================================
-# SQLITE
-# =========================================
+        .logo{
 
-conn = sqlite3.connect(
-    "sinistros.db",
-    check_same_thread=False
-)
+            text-align:center;
 
-cursor = conn.cursor()
+            font-size:60px;
 
-cursor.execute("""
+            margin-bottom:10px;
 
-CREATE TABLE IF NOT EXISTS sinistros (
+        }
 
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    descricao TEXT,
-    status TEXT,
-    risco TEXT,
-    score INTEGER
+        h1{
 
-)
+            color:white;
 
-""")
+            text-align:center;
 
-conn.commit()
+            margin-bottom:10px;
 
-# =========================================
-# IA
-# =========================================
+            font-size:38px;
 
-def analisar_risco(descricao):
+        }
 
-    descricao = descricao.lower()
+        .subtitulo{
 
-    if "queda" in descricao:
-        return "MÉDIO", 65
+            color:#b9c6d8;
 
-    elif "máquina" in descricao or "elétrica" in descricao:
-        return "ALTO", 90
+            text-align:center;
 
-    elif "leve" in descricao:
-        return "BAIXO", 30
+            margin-bottom:30px;
 
-    else:
-        return "MÉDIO", 50
+            font-size:14px;
 
-# =========================================
-# LOGIN
-# =========================================
+        }
 
-@app.route("/login", methods=["GET", "POST"])
-def login():
+        input{
 
-    erro = None
+            width:100%;
 
-    if request.method == "POST":
+            padding:15px;
 
-        username = request.form["username"]
+            margin-bottom:18px;
 
-        password = request.form["senha"]
+            border:none;
 
-        # LOGIN PROFISSIONAL
-        if username == "conexaoinsaude@msn.com" and password == "jppfr7901":
+            border-radius:10px;
 
-            user = User(username)
+            font-size:16px;
 
-            login_user(user)
+            outline:none;
 
-            return redirect(url_for("home"))
+        }
 
-        else:
+        button{
 
-            erro = "Usuário ou senha inválidos."
+            width:100%;
 
-    return render_template(
-        "login.html",
-        erro=erro
-    )
+            padding:15px;
 
-# =========================================
-# LOGOUT
-# =========================================
+            background:#2da8ff;
 
-@app.route("/logout")
-@login_required
-def logout():
+            color:white;
 
-    logout_user()
+            border:none;
 
-    return redirect(url_for("login"))
+            border-radius:10px;
 
-# =========================================
-# HOME
-# =========================================
+            font-size:18px;
 
-@app.route("/")
-@login_required
-def home():
+            cursor:pointer;
 
-    filtro = request.args.get("risco")
+            transition:0.3s;
 
-    busca = request.args.get("busca")
+        }
 
-    query = "SELECT * FROM sinistros WHERE 1=1"
+        button:hover{
 
-    params = []
+            background:#1593ec;
 
-    if filtro and filtro != "TODOS":
+        }
 
-        query += " AND risco = ?"
+        .erro{
 
-        params.append(filtro)
+            background:#ff4d4d;
 
-    if busca:
+            color:white;
 
-        query += " AND descricao LIKE ?"
+            padding:12px;
 
-        params.append(f"%{busca}%")
+            border-radius:8px;
 
-    cursor.execute(query, params)
+            margin-bottom:18px;
 
-    sinistros = cursor.fetchall()
+            text-align:center;
 
-    total_sinistros = len(sinistros)
+        }
 
-    alto_risco = len([
-        s for s in sinistros
-        if s[3] == "ALTO"
-    ])
+    </style>
 
-    medio_risco = len([
-        s for s in sinistros
-        if s[3] == "MÉDIO"
-    ])
+</head>
 
-    baixo_risco = len([
-        s for s in sinistros
-        if s[3] == "BAIXO"
-    ])
+<body>
 
-    media_score = 0
+    <div class="login-box">
 
-    if total_sinistros > 0:
+        <div class="logo">🔐</div>
 
-        media_score = sum([
-            s[4] for s in sinistros
-        ]) / total_sinistros
+        <h1>Login</h1>
 
-    return render_template(
+        <div class="subtitulo">
+            SINISTROS AI ENGINE
+        </div>
 
-        "index.html",
+        {% if erro %}
 
-        sinistros=sinistros,
+            <div class="erro">
 
-        total_sinistros=total_sinistros,
+                {{ erro }}
 
-        alto_risco=alto_risco,
+            </div>
 
-        medio_risco=medio_risco,
+        {% endif %}
 
-        baixo_risco=baixo_risco,
+        <form method="POST">
 
-        media_score=round(media_score, 1)
+            <input
+                type="text"
+                name="username"
+                placeholder="Usuário"
+                autocomplete="off"
+                required
+            >
 
-    )
+            <input
+                type="password"
+                name="senha"
+                placeholder="Senha"
+                autocomplete="new-password"
+                required
+            >
 
-# =========================================
-# ADICIONAR
-# =========================================
+            <button type="submit">
 
-@app.route("/adicionar", methods=["POST"])
-@login_required
-def adicionar():
+                Entrar
 
-    descricao = request.form["descricao"]
+            </button>
 
-    status = "Em análise"
+        </form>
 
-    risco, score = analisar_risco(descricao)
+    </div>
 
-    cursor.execute("""
+</body>
 
-    INSERT INTO sinistros
-    (descricao, status, risco, score)
-
-    VALUES (?, ?, ?, ?)
-
-    """, (descricao, status, risco, score))
-
-    conn.commit()
-
-    return redirect("/")
-
-# =========================================
-# PDF
-# =========================================
-
-@app.route("/pdf")
-@login_required
-def gerar_pdf():
-
-    cursor.execute("SELECT * FROM sinistros")
-
-    sinistros = cursor.fetchall()
-
-    nome_pdf = "relatorio_sinistros.pdf"
-
-    pdf = canvas.Canvas(nome_pdf)
-
-    pdf.setFont("Helvetica-Bold", 18)
-
-    pdf.drawString(
-        140,
-        800,
-        "Relatório Executivo de Sinistros"
-    )
-
-    y = 760
-
-    pdf.setFont("Helvetica", 12)
-
-    for s in sinistros:
-
-        pdf.drawString(50, y, f"ID: {s[0]}")
-        y -= 20
-
-        pdf.drawString(50, y, f"Descrição: {s[1]}")
-        y -= 20
-
-        pdf.drawString(50, y, f"Status: {s[2]}")
-        y -= 20
-
-        pdf.drawString(50, y, f"Risco: {s[3]}")
-        y -= 20
-
-        pdf.drawString(50, y, f"Score IA: {s[4]}/100")
-        y -= 40
-
-    pdf.save()
-
-    return send_file(
-        nome_pdf,
-        as_attachment=True
-    )
-
-# =========================================
-# EXECUÇÃO
-# =========================================
-
-if __name__ == "__main__":
-
-    app.run(debug=True)
+</html>
