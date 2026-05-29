@@ -15,7 +15,9 @@ app = Flask(__name__)
 
 app.secret_key = "supersecretkey"
 
+# =========================================
 # LOGIN
+# =========================================
 
 login_manager = LoginManager()
 
@@ -23,27 +25,24 @@ login_manager.init_app(app)
 
 login_manager.login_view = "login"
 
+# =========================================
 # USUÁRIO
+# =========================================
 
 class User(UserMixin):
 
     def __init__(self, id):
         self.id = id
 
-USUARIO = {
-
-    "admin": {
-        "senha": "1234"
-    }
-
-}
 
 @login_manager.user_loader
 def load_user(user_id):
 
     return User(user_id)
 
+# =========================================
 # SQLITE
+# =========================================
 
 conn = sqlite3.connect(
     "sinistros.db",
@@ -68,7 +67,9 @@ CREATE TABLE IF NOT EXISTS sinistros (
 
 conn.commit()
 
+# =========================================
 # IA
+# =========================================
 
 def analisar_risco(descricao):
 
@@ -86,30 +87,42 @@ def analisar_risco(descricao):
     else:
         return "MÉDIO", 50
 
+# =========================================
 # LOGIN
+# =========================================
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+
+    erro = None
 
     if request.method == "POST":
 
         username = request.form["username"]
 
-        senha = request.form["senha"]
+        password = request.form["senha"]
 
-        if username in USUARIO:
+        # LOGIN PROFISSIONAL
+        if username == "conexaoinsaude@msn.com" and password == "jppfr7901":
 
-            if senha == USUARIO[username]["senha"]:
+            user = User(username)
 
-                user = User(username)
+            login_user(user)
 
-                login_user(user)
+            return redirect(url_for("home"))
 
-                return redirect(url_for("home"))
+        else:
 
-    return render_template("login.html")
+            erro = "Usuário ou senha inválidos."
 
+    return render_template(
+        "login.html",
+        erro=erro
+    )
+
+# =========================================
 # LOGOUT
+# =========================================
 
 @app.route("/logout")
 @login_required
@@ -119,7 +132,9 @@ def logout():
 
     return redirect(url_for("login"))
 
+# =========================================
 # HOME
+# =========================================
 
 @app.route("/")
 @login_required
@@ -192,7 +207,9 @@ def home():
 
     )
 
+# =========================================
 # ADICIONAR
+# =========================================
 
 @app.route("/adicionar", methods=["POST"])
 @login_required
@@ -217,7 +234,9 @@ def adicionar():
 
     return redirect("/")
 
+# =========================================
 # PDF
+# =========================================
 
 @app.route("/pdf")
 @login_required
@@ -266,6 +285,10 @@ def gerar_pdf():
         nome_pdf,
         as_attachment=True
     )
+
+# =========================================
+# EXECUÇÃO
+# =========================================
 
 if __name__ == "__main__":
 
